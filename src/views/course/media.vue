@@ -359,7 +359,8 @@ export default {
               // console.log(res)
               if (res.code === 20000) {
                 this.$message.success("删除成功");
-                this.getList();
+                this.mediaList.splice(index, 1)
+                // this.getList();
               }
             })
             .catch((err) => {
@@ -369,6 +370,7 @@ export default {
         .catch((err) => {
           this.$message.error("删除失败");
         });
+       
     },
 
     //上传图片
