@@ -174,9 +174,32 @@ export const asyncRoutes = [
         meta: {
           title: '专栏',
           roles: ['admin'] // or you can only set roles in sub nav
+        },
+      },
+      {
+        path:"columnLog",
+        
+        component:() => import("@/views/course/columnLog"),
+        name:"ColumnLog",
+        hidden:true,
+        meta:{
+          title:"专栏目录",
         }
       }
     ]
+  },
+  {
+    path: "/user",
+    component:Layout,
+    children:[
+      {
+        path:"user",
+        component:()=> import("@/views/user/user"),
+        name:"User",
+        meta:{title:"用户", icon:"icon",noCache:true}
+      }
+    ]
+    
   },
   /* {
     path: '/permission',

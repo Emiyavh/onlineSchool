@@ -1,11 +1,36 @@
 <template>
   <div class="container">
+    <el-card class="topCard">
+      <img :src="this.$route.params.item.cover" alt="" class="topCard-l" />
+      <div class="topCard-r">
+        <div>
+          <h4 class="top-title">{{ this.$route.params.item.title }}</h4>
+          <span class="fr">
+            {{ this.$route.params.item.isend ? "已完结" : "连载中" }}
+          </span>
+        </div>
+        <p class="top-content">{{ this.$route.params.item.content }}</p>
+        <p class="top-price">￥：{{ this.$route.params.item.price }}</p>
+        <div>
+          <el-button
+            @click="handleStatusChange"
+            :type="this.$route.params.item.status ? 'primary' : 'info'"
+          >
+            {{ this.$route.params.item.status ? "上架" : "下架" }}
+          </el-button>
+          <el-button @click="handleIsEnd"
+            >设为
+            {{ this.$route.params.item.isend ? "连载中" : "已完结" }}</el-button
+          >
+        </div>
+      </div>
+    </el-card>
     <aside class="column-header">
       <el-button type="primary" icon="el-icon-edit" @click="handleAdd()">
-        新增专栏
+        新增目录
       </el-button>
       <div class="column-header-r">
-        <el-select v-model="listQuery.status"  placeholder="商品状态">
+        <el-select v-model="listQuery.status" placeholder="商品状态">
           <el-option label="已上架" value="1"> </el-option>
           <el-option label="已下架" value="0"> </el-option>
         </el-select>
@@ -17,6 +42,7 @@
     </aside>
     <el-card>
       <el-table
+        ref="dragTable"
         :data="columnList"
         v-loading="listLoading"
         border
@@ -37,24 +63,24 @@
             <span>{{ scope.row.id }}</span>
           </template>
         </el-table-column>
-        <!-- 专栏内容 -->
-        <el-table-column label="专栏内容" min-width="150px">
+        <!-- 单品内容 -->
+        <el-table-column label="单品内容" min-width="150px">
           <template slot-scope="scope">
             <img class="content-l" :src="scope.row.cover" alt="" width="100" />
             <div>
               <span>{{ scope.row.title }}</span> <br />
-              <span class="content-price">￥： {{ scope.row.t_price }} </span>
+              <span class="content-price">￥： {{ scope.row.price }} </span>
             </div>
           </template>
         </el-table-column>
         <!-- 更新状态 -->
-        <el-table-column label="更新状态" align="center">
+        <!-- <el-table-column label="更新状态" align="center">
           <template slot-scope="scope">
             <div :style="{ color: scope.row.isend ? 'black' : 'red' }">
               <span> {{ scope.row.isend ? "已完结" : "连载中" }} </span>
             </div>
           </template>
-        </el-table-column>
+        </el-table-column> -->
         <!-- 订阅量 -->
         <el-table-column label="订阅量" align="center" width="95">
           <template slot-scope="scope">
@@ -78,9 +104,6 @@
         <!-- 操作 -->
         <el-table-column label="操作" align="center" width="230">
           <template slot-scope="scope">
-            <router-link :to="{name:'ColumnLog',params:{item:scope.row}}">
-              <el-button type="warning" size="mini"> 目录 </el-button>
-            </router-link>
             <el-button
               type="primary"
               size="mini"
@@ -88,13 +111,7 @@
             >
               编辑
             </el-button>
-            <el-button
-              size="mini"
-              :type="scope.row.status ? 'info' : 'success'"
-              @click="handleStatusChange(scope.row)"
-            >
-              {{ scope.row.status ? "下架" : "上架" }}
-            </el-button>
+
             <el-button
               size="mini"
               type="danger"
@@ -104,7 +121,18 @@
             </el-button>
           </template>
         </el-table-column>
+        <el-table-column align="center" label="拖曳" width="80">
+          <template slot-scope="{}">
+            <svg-icon class="drag-handler" icon-class="drag" />
+          </template>
+        </el-table-column>
       </el-table>
+      <div class="show-d">
+        <el-tag>The default order :</el-tag> {{ oldList }}
+      </div>
+      <div class="show-d">
+        <el-tag>The after dragging order :</el-tag> {{ newList }}
+      </div>
       <!-- 页码 -->
       <pagination
         v-show="total > 0"
@@ -118,53 +146,26 @@
         :title="textMap[dialogStatus]"
         :visible.sync="dialogFormVisible"
       >
-        <el-form
-          ref="dataForm"
-          :rules="rules"
-          :model="temp"
-          label-position="left"
-          label-width="70px"
-          style="width: 400px; margin-left: 50px"
+        <el-tabs
+          v-model="activeName"
+          style="margin-top: 15px"
+          type="border-card"
         >
-          <!-- 标题 -->
-          <el-form-item label="标题" prop="title">
-            <el-input v-model="temp.title" />
-          </el-form-item>
-          <!-- 封面 -->
-          <el-form-item label="封面">
-            <dropzone
-              id="myVueDropzone"
-              url="https://httpbin.org/post"
-              @dropzone-removedFile="dropzoneR"
-              @dropzone-success="dropzoneS"
-            />
-          </el-form-item>
-          <!-- 试看内容 -->
-          <el-form-item label="试看内容" prop="trycontent">
-            <tinymce v-model="temp.trycontent" :height="200" :width="400" />
-          </el-form-item>
-          <!-- 课程内容 -->
-          <el-form-item label="课程内容" prop="coursecontent">
-            <tinymce v-model="temp.coursecontent" :height="200" :width="400" />
-          </el-form-item>
-          <!-- 课程价格 -->
-          <el-form-item label="课程价格">
-            <el-input-number
-              v-model="temp.num"
-              @change="priceChange"
-              :min="0"
-              :max="10"
-              label="描述文字"
-            ></el-input-number>
-          </el-form-item>
-          <!-- 状态 -->
-          <el-form-item label="状态">
-            <el-radio-group v-model="temp.status">
-              <el-radio :label="3">下架</el-radio>
-              <el-radio :label="6">上架</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </el-form>
+          <el-tab-pane
+            v-for="item in tabMapOptions"
+            :key="item.key"
+            :label="item.label"
+            :name="item.key"
+          >
+            <keep-alive>
+              <column-pane
+                v-if="activeName == item.key"
+                :type="item.key"
+                @create="showCreatedTimes"
+              />
+            </keep-alive>
+          </el-tab-pane>
+        </el-tabs>
         <div slot="footer" class="dialog-footer">
           <el-button @click="dialogFormVisible = false"> Cancel </el-button>
           <el-button
@@ -190,14 +191,19 @@ import {
 import Pagination from "@/components/Pagination";
 import Tinymce from "@/components/Tinymce";
 import Dropzone from "@/components/Dropzone";
+import Sortable from "sortablejs";
+
+//新增表格相关
+import ColumnPane from './components/columnPane.vue';
 
 export default {
-  name: "Column",
-  components: { Pagination, Tinymce, Dropzone },
+  name: "ColumnLog",
+  components: { Pagination, Tinymce, Dropzone, ColumnPane },
   data() {
     return {
       listLoading: true,
       columnList: [],
+
       listQuery: {
         page: 1,
         title: "",
@@ -205,53 +211,87 @@ export default {
         status: "",
       },
       total: 0,
-      temp: {
-        title: "",
-        cover: "",
-        trycontent: "",
-        coursecontent: "",
-        num: 0,
-        status: "",
-      },
+
       dialogFormVisible: false,
       dialogStatus: "",
       textMap: {
         create: "新增",
         update: "编辑",
       },
-      rules: {
-        title: [{ required: true, message: "请填写标题", trigger: "blur" }],
-        trycontent: [
-          { required: true, message: "请填写试看内容", trigger: "blur" },
-        ],
-        coursecontent: [
-          { required: true, message: "请填写课程内容", trigger: "blur" },
-        ],
-      },
+
       dialogImageUrl: "",
       dialogVisible: false,
+      oldList: [],
+      newList: [],
+
+      //弹出框内容
+      tabMapOptions: [
+        { label: "图文", key: "TW" },
+        { label: "音频", key: "YP" },
+        { label: "视频", key: "SP" },
+      ],
+      activeName: "TW",
+      createdTimes: 0,
     };
   },
   created() {
+    console.log(this.$route.params.item);
+
     this.getList();
   },
   methods: {
     //   获取列表
-    getList() {
+    /* getList() {
       this.listLoading = true;
       fetchList(this.listQuery)
         .then((res) => {
-          console.log(res);
-          //   console.log(this.listQuery)
           if (res.code === 20000) {
             this.columnList = res.data.items;
             this.total = res.data.total;
             this.listLoading = false;
+            this.oldList = this.list.map((v) => v.id);
+            this.newList = this.oldList.slice();
+            this.$nextTick(() => {
+              this.setSort();
+            });
           }
         })
         .catch((err) => {
           console.log("表格获取失败");
         });
+    }, */
+    async getList() {
+      this.listLoading = true;
+      const { data } = await fetchList(this.listQuery);
+      this.columnList = data.items;
+      this.total = data.total;
+      this.listLoading = false;
+      this.oldList = this.columnList.map((v) => v.id);
+      this.newList = this.oldList.slice();
+      this.$nextTick(() => {
+        this.setSort();
+      });
+    },
+    setSort() {
+      const el = this.$refs.dragTable.$el.querySelectorAll(
+        ".el-table__body-wrapper > table > tbody"
+      )[0];
+      this.sortable = Sortable.create(el, {
+        ghostClass: "sortable-ghost", // Class name for the drop placeholder,
+        setData: function (dataTransfer) {
+          // to avoid Firefox bug
+          // Detail see : https://github.com/RubaXa/Sortable/issues/1012
+          dataTransfer.setData("Text", "");
+        },
+        onEnd: (evt) => {
+          const targetRow = this.columnList.splice(evt.oldIndex, 1)[0];
+          this.columnList.splice(evt.newIndex, 0, targetRow);
+
+          // for show the changes, you can delete in you code
+          const tempIndex = this.newList.splice(evt.oldIndex, 1)[0];
+          this.newList.splice(evt.newIndex, 0, tempIndex);
+        },
+      });
     },
     resetTemp() {
       this.temp = {
@@ -264,60 +304,15 @@ export default {
         type: "",
       };
     },
-    // 添加专栏
+    // 添加目录
     handleAdd() {
       this.resetTemp();
       this.dialogStatus = "create";
       this.dialogFormVisible = true;
-      this.$nextTick(() => {
-        this.$refs["dataForm"].clearValidate();
-      });
-    },
-    createData() {
-      this.$refs["dataForm"].validate((valid) => {
-        if (valid) {
-          createColumn(this.temp)
-            .then((res) => {
-              // console.log(res)
-              console.log(this.temp);
-              if (res.code === 20000) {
-                this.$message.success(res.msg);
-                this.getList();
-              } else {
-                this.$message.error(res.msg);
-              }
-            })
-            .catch((err) => {
-              this.$message.error(err);
-            });
-        }
-      });
     },
     // 编辑
     handleUpdate(row) {
-      this.temp = Object.assign({}, row); // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp);
-      this.dialogStatus = "update";
-      this.dialogFormVisible = true;
-      this.$nextTick(() => {
-        this.$refs["dataForm"].clearValidate();
-      });
-    },
-    updateData() {
-      this.$refs["dataForm"].validate((valid) => {
-        if (valid) {
-          const tempData = Object.assign({}, this.temp);
-          tempData.timestamp = +new Date(tempData.timestamp);
-          updateColumn(tempData).then((res) => {
-            if (res.code === 20000) {
-              this.$message.success(res.msg);
-              this.getList();
-            } else {
-              this.$message.error(res.msg);
-            }
-          });
-        }
-      });
+      console.log(row)
     },
 
     //排序
@@ -345,15 +340,11 @@ export default {
       this.listQuery.page = 1;
       this.getList();
     },
-    //上架下架
-    handleStatusChange(row) {
-      // console.log(row)
-      row.status = !row.status;
-    },
+
     //删除
     handleDelete(row, index) {
       console.log(index);
-      this.$confirm("确定要删除这条专栏数据吗?", "温馨提示", {
+      this.$confirm("确定要删除这条目录数据吗?", "温馨提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
       })
@@ -376,22 +367,29 @@ export default {
         });
     },
 
-    //上传图片
-    dropzoneS(file) {
-      console.log(file);
-      this.$message({ message: "Upload success", type: "success" });
+    //上架下架
+    handleStatusChange() {
+      this.$route.params.item.status = !this.$route.params.item.status;
     },
-    dropzoneR(file) {
-      console.log(file);
-      this.$message({ message: "Delete success", type: "success" });
+    // 设置已完结
+    handleIsEnd() {
+      this.$route.params.item.isend = !this.$route.params.item.isend;
     },
-    //修改价格
-    priceChange(val) {
-      // console.log(val);
-    },
+
+    showCreatedTimes() {
+      this.createdTimes = this.createdTimes + 1
+    }
   },
 };
 </script>
+
+<style>
+.sortable-ghost {
+  opacity: 0.8;
+  color: #fff !important;
+  background: #42b983 !important;
+}
+</style>
 
 <style scoped>
 .container {
@@ -411,5 +409,38 @@ export default {
 
 .content-price {
   color: #f00;
+}
+
+.topCard-l {
+  width: 200px;
+  float: left;
+  margin-right: 20px;
+}
+.topCard-r {
+  display: flex;
+  flex-direction: column;
+}
+.fr {
+  float: right;
+  color: #ccc;
+}
+.top-title {
+  margin: 5px;
+}
+.top-content {
+  color: #ccc;
+  margin: 5px;
+}
+.top-price {
+  color: #f00;
+  margin: 5px;
+}
+.drag-handler {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+.show-d {
+  margin-top: 15px;
 }
 </style>
