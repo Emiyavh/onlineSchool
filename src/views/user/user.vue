@@ -69,7 +69,11 @@
         <!-- 操作 -->
         <el-table-column label="操作" align="center" width="300">
           <template slot-scope="scope">
-            <el-button type="primary" size="mini" @click="handleMessage(scope.row.user)">
+            <el-button
+              type="primary"
+              size="mini"
+              @click="handleMessage(scope.row.user)"
+            >
               详情
             </el-button>
             <el-button size="mini" type="success"> 联系用户 </el-button>
@@ -100,14 +104,21 @@
         :dialog-data="dialogData"
       >
         <div class="dialog-top">
-            <span>ID：{{dialogData.id}} </span>
-            <span>用户名：{{dialogData.username}} </span>
-            <span>昵称：{{dialogData.nickname ? dialogData.nickname :"未设定" }} </span>
-            <span>手机号：{{dialogData.phone}} </span>
-            <span>锁定：{{dialogData.status ? "未锁定":"已锁定"}} </span>
-            <span>会员：{{dialogData.user_level}} </span>
-            <span>会员到期时间：{{dialogData.user_level_expire}} </span>
-            <span>注册时间：{{dialogData.created_time}} </span>
+          <div>
+            <span>ID：{{ dialogData.id }} </span>
+            <span>用户名：{{ dialogData.username }} </span>
+            <span
+              >昵称：{{ dialogData.nickname ? dialogData.nickname : "未设定" }}
+            </span>
+            <span>手机号：{{ dialogData.phone }} </span>
+          </div>
+
+          <div>
+            <span>锁定：{{ dialogData.status ? "未锁定" : "已锁定" }} </span>
+            <span>会员：{{ dialogData.user_level }} </span>
+            <span>会员到期时间：{{ dialogData.user_level_expire }} </span>
+            <span>注册时间：{{ dialogData.created_time }} </span>
+          </div>
         </div>
         <el-tabs
           v-model="activeName"
@@ -194,7 +205,7 @@ export default {
       ],
       activeName: "kc",
       createdTimes: 0,
-      dialogData:{},
+      dialogData: {},
     };
   },
   created() {
@@ -232,8 +243,8 @@ export default {
     // 添加用户
     handleMessage(val) {
       this.resetTemp();
-      console.log(val)
-      this.dialogData = val
+      console.log(val);
+      this.dialogData = val;
       this.dialogStatus = "create";
       this.dialogFormVisible = true;
     },
@@ -291,7 +302,9 @@ export default {
 .user-header {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
+
 .user-header-r {
   display: flex;
 }
@@ -306,7 +319,12 @@ export default {
 .content-price {
   color: #f00;
 }
-.dialog-top{
-    display: flex;
+.dialog-top div{
+  display: table;
+}
+.dialog-top span {
+  display: table-cell;
+  text-align: center;
+  width: 25%;
 }
 </style>
